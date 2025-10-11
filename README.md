@@ -215,3 +215,7 @@ Comandos úteis (dentro do container do backend):
 
 ## Licença
 Uso educacional e de demonstração. Adapte conforme necessário para produção.
+
+## Aprendendo Git
+
+Esta é uma alteração feita na branch `erik-challange2` para praticar o fluxo de Pull Request.
