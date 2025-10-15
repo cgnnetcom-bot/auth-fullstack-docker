@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: prod-auth-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres} # Pode ser um secret também, se desejado
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: ${DB_NAME:-authdb} # Pode ser um secret também
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    secrets:
+      - db_password
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: prod-auth-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:$(cat /run/secrets/db_password)@db:5432/${DB_NAME:-authdb}?schema=public
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h} # Aumentar expiração para produção pode ser útil
+      TMDB_API_KEY_FILE: /run/secrets/tmdb_api_key
+      FRONTEND_URL: ${PROD_FRONTEND_URL:?PROD_FRONTEND_URL variable is not set for production}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    secrets:
+      - db_password
+      - jwt_secret
+      - tmdb_api_key
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: prod-auth-frontend
+    restart: always
+    # A porta é exposta por um proxy reverso (ex: Nginx, Traefik) em um cenário de produção real.
+    # Se for acesso direto, a porta pode ser exposta:
+    # ports:
+    #   - "80:80"
+    networks:
+      - web
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  web:
+    driver: bridge
+  internal:
+    internal: true # Garante que esta rede não tenha acesso externo
+
+secrets:
+  db_password:
+    file: ./db_password.txt
+  jwt_secret:
+    file: ./jwt_secret.txt
+  tmdb_api_key:
+    file: ./tmdb_api_key.txt

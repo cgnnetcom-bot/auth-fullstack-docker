@@ -1,28 +1,20 @@
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-}
-
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { token, loading } = useAuth();
+const ProtectedRoute = () => {
+  const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    // Mostra um loader enquanto verifica a autenticação
+    return <div>Carregando...</div>;
   }
 
-  if (!token) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />; // Renderiza o componente filho (ex: Dashboard)
 };
+
+export default ProtectedRoute;

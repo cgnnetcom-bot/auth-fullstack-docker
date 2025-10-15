@@ -1,133 +1,93 @@
-import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Layout } from '../components/Layout';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 
-export const Signup = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const signupSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters long'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'], // path of error
+  });
+
+type SignupFormInputs = z.infer<typeof signupSchema>;
+
+const Signup = () => {
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const { signup } = useAuth();
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormInputs>({ resolver: zodResolver(signupSchema) });
+
+  const onSubmit = async (data: SignupFormInputs) => {
     setError('');
-    setSuccess(false);
-
-    // Validações
-    if (!name || !email || !password) {
-      setError('All fields are required');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    setLoading(true);
-
+    setSuccess('');
+    setIsLoading(true);
     try {
-      await signup(name, email, password);
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Omit confirmPassword before sending to the API
+      const { confirmPassword, ...apiData } = data;
+      await signup(apiData.name, apiData.email, apiData.password);
+      setSuccess('Account created successfully! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      setError(err.message || 'Signup failed. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Layout>
-      <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
-          Create an Account
-        </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
-            Account created successfully! Redirecting to login...
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="John Doe"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="john@example.com"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Minimum 8 characters"
-              disabled={loading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Creating account...' : 'Sign Up'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Log in
-            </Link>
-          </p>
+    <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 64px)' }}>
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 className="text-2xl font-bold mb-6 text-center">Create Account</h2>
+        {error && <p className="bg-red-500 text-white p-3 rounded mb-4">{error}</p>}
+        {success && <p className="bg-green-500 text-white p-3 rounded mb-4">{success}</p>}
+        <div className="mb-4">
+          <label className="block mb-2">Name</label>
+          <input type="text" {...register('name')} className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 focus:outline-none" />
+          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
         </div>
-      </div>
-    </Layout>
+        <div className="mb-4">
+          <label className="block mb-2">Email</label>
+          <input type="email" {...register('email')} className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 focus:outline-none" />
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+        </div>
+        <div className="mb-4">
+          <label className="block mb-2">Password</label>
+          <input type="password" {...register('password')} className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 focus:outline-none" />
+          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+        </div>
+        <div className="mb-6">
+          <label className="block mb-2">Confirm Password</label>
+          <input type="password" {...register('confirmPassword')} className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 focus:outline-none" />
+          {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+          disabled={isLoading || success !== '' || Object.keys(errors).length > 0}
+        >
+          {isLoading ? 'Creating account...' : 'Sign Up'}
+        </button>
+        <p className="text-center mt-4">
+          Already have an account? <Link to="/login" className="text-blue-400 hover:underline">Log in</Link>
+        </p>
+      </form>
+    </div>
   );
 };
+
+export default Signup;

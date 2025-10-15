@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { AuthService } from '../services/auth.service';
 import {
   signupSchema,
@@ -8,8 +8,8 @@ import {
   verifyCodeSchema,
   resetPasswordSchema,
 } from '../utils/validators';
+import { AppError } from '../services/AppError';
 
-const prisma = new PrismaClient(); // Ou importe de um arquivo centralizado
 const authService = new AuthService(prisma);
 
 export class AuthController {
@@ -117,5 +117,14 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
+  }
+
+  getMe(req: Request, res: Response, next: NextFunction) {
+    if (!req.user) {
+      res.status(401).json({ message: 'Não autenticado' });
+      return;
+    }
+    // Apenas retornamos o payload do token, que já é seguro
+    res.status(200).json({ user: req.user });
   }
 }

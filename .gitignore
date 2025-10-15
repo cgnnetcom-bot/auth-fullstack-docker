@@ -30,6 +30,7 @@ lerna-debug.log*
 # IDEs and editors
 .vscode/
 .idea/
+.continue/
 
 # OS generated files
 .DS_Store

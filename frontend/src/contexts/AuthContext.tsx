@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '../api/client';
+import { authAPI, authEventEmitter } from '../api/client';
 
 interface User {
   id: string;
@@ -29,12 +29,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    try {
+      if (storedToken && storedUser && storedUser !== 'undefined') {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      // Se os dados estiverem corrompidos, limpa o localStorage para evitar erros futuros.
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
 
     setLoading(false);
+
+    // Escuta por eventos de logout forçado vindos do interceptor da API
+    const handleForceLogout = () => {
+      logout();
+    };
+    authEventEmitter.on('auth:logout', handleForceLogout);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -60,11 +73,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  const logout = async () => {
+    // Limpa o estado do cliente imediatamente para uma experiência de usuário mais rápida
+    localStorage.removeItem('token'); // Já estava correto, mas confirmando.
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+
+    // Tenta invalidar o refresh token no backend
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error("Failed to logout from server, but client is logged out.", error);
+    }
   };
 
   return (
