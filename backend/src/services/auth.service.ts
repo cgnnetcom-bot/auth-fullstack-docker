@@ -1,7 +1,7 @@
 import { PrismaClient, User } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/bcrypt';
 import { randomBytes, randomInt } from 'crypto';
-import { generateAccessToken, generateResetToken } from '../utils/jwt';
+import { generateToken, verifyToken } from '../utils/jwt';
 import { AppError } from './AppError';
 
 export class AuthService {
@@ -60,7 +60,7 @@ export class AuthService {
       throw new AppError('Invalid credentials', 401);
     }
 
-    const accessToken = generateAccessToken({
+    const accessToken = generateToken({
       userId: user.id,
       email: user.email,
     });
@@ -163,7 +163,7 @@ export class AuthService {
       throw new AppError('Invalid code', 400);
     }
 
-    const resetToken = generateResetToken({
+    const resetToken = generateToken({
       userId: user.id,
       email: user.email,
     });
@@ -172,8 +172,6 @@ export class AuthService {
   }
 
   async resetPassword(resetToken: string, newPassword: string) {
-    const { verifyToken } = await import('../utils/jwt'); // Manter import dinâmico se houver dependência circular
-    
     let decoded;
     try {
       decoded = verifyToken(resetToken);
@@ -234,7 +232,7 @@ export class AuthService {
       throw new AppError('Invalid or expired refresh token', 401);
     }
 
-    const newAccessToken = generateAccessToken({
+    const newAccessToken = generateToken({
       userId: refreshToken.user.id,
       email: refreshToken.user.email,
     });

@@ -19,6 +19,7 @@ model User {
 
   passwordResets PasswordReset[]
   refreshTokens  RefreshToken[]
+  favorites      Favorite[]
 }
 
 model PasswordReset {
@@ -39,4 +40,20 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  movieId    Int // The ID from The Movie Database (TMDB)
+  title      String
+  posterPath String?
+  voteAverage Float    @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relation to User
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // A user can only favorite a movie once
+  @@unique([userId, movieId])
 }

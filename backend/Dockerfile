@@ -1,15 +1,19 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
-RUN apk add --no-cache openssl1.1 || apk add --no-cache openssl
 
+RUN apt-get update -y && apt-get install -y openssl
+RUN npm install
+
+# Copia o schema do Prisma para gerar o client
 COPY prisma ./prisma/
-COPY . .
 RUN npx prisma generate
 
-EXPOSE 4000
+COPY . .
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]
+# Compila o código TypeScript para JavaScript, criando o diretório 'dist'
+RUN npm run build
+
+EXPOSE 4000

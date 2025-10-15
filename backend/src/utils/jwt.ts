@@ -1,23 +1,22 @@
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
+import type { TokenPayload } from './token-payload';
 
-export interface JwtPayload {
-  userId: string;
-  email: string;
-}
+export const generateToken = (payload: Pick<TokenPayload, 'userId' | 'email'>): string => {
+  const secret = env.jwtSecret as Secret;
+  if (!secret) {
+    throw new Error('JWT_SECRET não configurado');
+  }
 
-export const generateAccessToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn,
-  });
+  // Usa número para evitar confusão de tipo em expiresIn
+  const options: SignOptions = { expiresIn: 60 * 60 * 24 * 7 }; // 7 dias
+  return jwt.sign(payload, secret, options);
 };
 
-export const generateResetToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, env.jwtSecret, {
-    expiresIn: '10m',
-  });
-};
-
-export const verifyToken = (token: string): JwtPayload => {
-  return jwt.verify(token, env.jwtSecret) as JwtPayload;
+export const verifyToken = (token: string): TokenPayload => {
+  const secret = env.jwtSecret as Secret;
+  if (!secret) {
+    throw new Error('JWT_SECRET não configurado');
+  }
+  return jwt.verify(token, secret) as TokenPayload;
 };
