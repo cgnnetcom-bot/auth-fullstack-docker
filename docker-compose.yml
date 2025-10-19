@@ -17,6 +17,15 @@ services:
       timeout: 5s
       retries: 5
 
+  s3:
+    image: jbergknoff/s3rver
+    container_name: auth-s3
+    ports:
+      - "4568:4568"
+    volumes:
+      - s3_data:/tmp
+    command: s3rver --hostname 0.0.0.0 --port 4568 --directory /tmp
+
   backend:
     build:
       context: ./backend
@@ -32,15 +41,18 @@ services:
       PORT: 4000
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@auth-db:5432/${DB_NAME:-authdb}?schema=public
       FRONTEND_URL: http://localhost:5173
-      # Adicione as variáveis de ambiente aqui ou no arquivo .env
-      JWT_SECRET: 3b6e2b0f1e56cddf2a45e4d890d9f7d8731a7db61f334b6a1c8f2c7e2ef9d431b43d22ac9ad4b9e7f45b7b0e4ef31dcd7e5c8a9f27e8e95d4bca87fd81c1f20e
-      TMDB_API_KEY: b81ad1dcac0d5acc730d56954f2db0f2
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      TMDB_API_KEY: ${TMDB_API_KEY}
     depends_on:
       db:
         condition: service_healthy
+      s3:
+        condition: service_started
     volumes:
       - ./backend:/app
-      - /app/node_modules
     command: sh -c "npx prisma migrate deploy && npm run dev"
 
   frontend:
@@ -55,10 +67,10 @@ services:
       VITE_API_URL: http://localhost:4000
     volumes:
       - ./frontend:/app
-      - /app/node_modules
     command: npm run dev
     stdin_open: true
     tty: true
 
 volumes:
   postgres_data:
+  s3_data:

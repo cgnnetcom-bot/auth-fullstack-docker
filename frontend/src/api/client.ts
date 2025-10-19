@@ -116,4 +116,32 @@ export const userAPI = {
   getMe: () => api.get('/me'),
 };
 
+// Image endpoints
+export const imageAPI = {
+  uploadImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  getImages: (page?: number, limit?: number, search?: string) => api.get('/images', { params: { page, limit, search } }),
+  getImage: (id: string) => api.get(`/images/${id}`),
+  deleteImage: (id: string) => api.delete(`/images/${id}`),
+  updateImage: (id: string, data: { title: string }) => api.patch(`/images/${id}`, data),
+};
+
+// Album endpoints
+export const albumAPI = {
+  createAlbum: (data: { name: string }) => api.post('/albums', data),
+  getAlbums: () => api.get('/albums'),
+  getAlbum: (id: string) => api.get(`/albums/${id}`),
+  addImageToAlbum: (albumId: string, imageId: string) => api.post(`/albums/${albumId}/images`, { imageId }),
+  removeImageFromAlbum: (albumId: string, imageId: string) => api.delete(`/albums/${albumId}/images/${imageId}`),
+  deleteAlbum: (id: string) => api.delete(`/albums/${id}`),
+  updateAlbum: (id: string, data: { name: string }) => api.patch(`/albums/${id}`, data),
+};
+
 export default api;

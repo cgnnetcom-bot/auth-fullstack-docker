@@ -14,6 +14,11 @@ import { VerifyCode } from './pages/VerifyCode';
 import { ResetPassword } from './pages/ResetPassword';
 import Movies from './pages/Movies';
 import Dashboard from './pages/Dashboard';
+import ImageGallery from './pages/ImageGallery';
+import Albums from './pages/Albums';
+import AlbumDetails from './pages/AlbumDetails';
+import PublicImage from './pages/PublicImage';
+
 function App() {
   return (
     <Router>
@@ -24,6 +29,7 @@ function App() {
             {/* Rotas Públicas */}
             <Route path="/" element={<Home />} />
             <Route path="/movies" element={<Movies />} />
+            <Route path="/public/images/:id" element={<PublicImage />} />
 
             {/* Rotas de Autenticação (apenas para não logados) */}
             <Route element={<AuthRoute />}>
@@ -37,6 +43,9 @@ function App() {
             {/* Rotas Protegidas (apenas para logados) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/gallery" element={<ImageGallery />} />
+              <Route path="/albums" element={<Albums />} />
+              <Route path="/albums/:id" element={<AlbumDetails />} />
             </Route>
           </Route>
         </Routes>

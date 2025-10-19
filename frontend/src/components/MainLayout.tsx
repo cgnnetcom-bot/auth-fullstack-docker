@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
+  console.log('User in MainLayout:', user);
 
   return (
     <>
@@ -13,7 +14,13 @@ const MainLayout = () => {
         <div>
           <Link to="/" className="mr-4 hover:text-blue-400">Home</Link>
           <Link to="/movies" className="mr-4 hover:text-blue-400">Movies</Link>
-          {user && <Link to="/dashboard" className="hover:text-blue-400">Dashboard</Link>}
+          {user && (
+            <>
+              <Link to="/dashboard" className="mr-4 hover:text-blue-400">Dashboard</Link>
+              <Link to="/gallery" className="mr-4 hover:text-blue-400">Gallery</Link>
+              <Link to="/albums" className="hover:text-blue-400">Albums</Link>
+            </>
+          )}
         </div>
         <div>
           {user ? (
